@@ -14,5 +14,5 @@ CACHE_TIMEOUT = 60
 
 DEBUG = os.getenv('DEBUG', None) is None
 
-DEFAULT_URL = '/drukte/parking'
+DEFAULT_URL = '/people/bewonersonderzoek'
 
