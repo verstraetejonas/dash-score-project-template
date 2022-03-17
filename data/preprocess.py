@@ -1,16 +1,17 @@
 import pandas as pd
+import geopandas as gpd
 import pyreadstat
+import uuid
 
+######!!!====== TVBewOnd =====!!!######
 ##### Set data directory parameters
-indir_v = '.\\data\\'
+indir_v = '.\\data\\input\\'
 infile_TVBewOnd2021 = 'TVBewOnd_SurveyData_2021.sav'
 infile_TVBewOnd2019 = 'TVBewOnd_SurveyData_2019.sav'
 infile_TVBewOnd2017 = 'TVBewOnd_SurveyData_2017.sav'
 infile_TVBewOnd_mapping = 'TVBewOnd_Meta_columnmappings.xlsx'
-infile_FODnacht = "FOD_OvernachtingscijfersPermaand.xlsx"
 
 ##### Read data
-## TVBewOnd
 TVBewOnd_df_2021, TVBewOnd_meta_2021 = pyreadstat.read_sav(indir_v + infile_TVBewOnd2021)
 TVBewOnd_df_2019, TVBewOnd_meta_2019 = pyreadstat.read_sav(indir_v + infile_TVBewOnd2019)
 TVBewOnd_df_2017, TVBewOnd_meta_2017 = pyreadstat.read_sav(indir_v + infile_TVBewOnd2017)
@@ -19,11 +20,9 @@ TVBewOnd_mapping_2021 = pd.read_excel(indir_v + infile_TVBewOnd_mapping, sheet_n
 TVBewOnd_mapping_2019 = pd.read_excel(indir_v + infile_TVBewOnd_mapping, sheet_name='2019', usecols=range(0,6))
 TVBewOnd_mapping_2017 = pd.read_excel(indir_v + infile_TVBewOnd_mapping, sheet_name='2017', usecols=range(0,6))
 
-## FOD overnachtingen
-FODnacht_df = pd.read_excel(indir_v + infile_FODnacht, sheet_name='per_maand')
+
 
 ##### Data preparation
-## TVBewOnd
 # Replace values with value labels
 TVBewOnd_dflbl_2021=TVBewOnd_df_2021.copy()
 TVBewOnd_dflbl_2019=TVBewOnd_df_2019.copy()
@@ -43,30 +42,9 @@ for i, (yr, df, df_lbl, meta, mapping) in enumerate(TVBewOnd_datalist):
             statdata[colname]=statdata[colname].map(mapdict[colname])
     df_lbl =statdata.copy()
     
-# Create Analysis tabel with constructs
-# TVBewOnd_constructlist = ['Fierheid', 'Economic empowerment', 'Social empowerment', 'Political empowerment', 'Support', 
-#               'Positieve impact', 'Negatieve impact', 'Leefbaarheid']
-# TVBewOnd_df_constructs = pd.DataFrame(columns = ['Jaar', 'Stad'] + TVBewOnd_constructlist)
-# for i, (yr, df, df_lbl, meta, mapping) in enumerate(TVBewOnd_datalist):
-#     # constructcols = mapping.loc[(mapping['construct'].isin(TVBewOnd_constructlist)) & (mapping['Type data']=='Constructscore')]
-#     constructcols = mapping.loc[(mapping['usage']=='Constructscore')]
-#     df_constr = df.loc[:,['Q_stad']+ constructcols.iloc[:,0].tolist()]
-#     newcols = ['Stad'] + constructcols.iloc[:,2].tolist()
-#     df_constr.columns = newcols
-#     df_constr['Jaar'] = yr
-#     df_constr['Stad']=df_constr['Stad'].map(meta.variable_value_labels['Q_stad'])  
-#     TVBewOnd_df_constructs = pd.concat([TVBewOnd_df_constructs, df_constr])
-
-# TVBewOnd_df_constructs_stacked = TVBewOnd_df_constructs.set_index(['Jaar','Stad' ], append=True)
-# TVBewOnd_df_constructs_stacked=TVBewOnd_df_constructs_stacked.stack().to_frame().reset_index().drop('level_0', axis=1)
-# TVBewOnd_df_constructs_stacked.columns=['Jaar', 'Stad', 'Construct', 'Gemiddelde']
-
-
 
 
 # Create tabel with all constructitems all respondents
-import uuid
-
 TVBewOnd_df_constritems = pd.DataFrame(columns = ['Jaar', 'Stad', 'Vraagcode', 'Vraaglabel', 'Construct', 'Weging', 'Score'])
 colname_weging = {'2017': 'weging_final', '2019': 'WegingFinal', '2021': 'Weging'}
 for i, (yr, df, df_lbl, meta, mapping) in enumerate(TVBewOnd_datalist):
@@ -113,11 +91,20 @@ for item in TVBewOnd_constrlist:
     TVBewOnd_constroptions.append({'label':item, 'value':item})
 
 
-## FOD overnachtingen
+######!!!====== FOD overnachtingen =====!!!######
+##### Set data directory parameters
+indir_v = '.\\data\\input\\'
+infile_FODnacht = "FOD_OvernachtingscijfersPermaand.xlsx"
+
+##### Read data
+FODnacht_df = pd.read_excel(indir_v + infile_FODnacht, sheet_name='per_maand')
+
+
 # Remove calculated records
 FODnacht_df['Jaar']=FODnacht_df['Jaar'].astype('str')
 FODnacht_df=FODnacht_df[(FODnacht_df['Herkomstland']!='Algemeen totaal') & (FODnacht_df['Herkomstland']!='Totaal buitenland')]
 
+##### Data preparation
 # Create destination lists
 FODnacht_destlist = FODnacht_df['Bestemming'].unique()
 FODnacht_destoptions = []
@@ -129,3 +116,117 @@ FODnacht_yearlist = FODnacht_df['Jaar'].unique()
 FODnacht_yearoptions = []
 for item in FODnacht_yearlist:
     FODnacht_yearoptions.append({'label':item, 'value':item})
+
+
+
+######!!!====== proximus profile data 2020 (students) =====!!!######
+##### Set data directory parameters
+root = '.\\'
+indir = root + 'data\\input\\'
+# infile_timeslots = 'prox_timeslots.csv'
+# infile_staytime = 'prox_staytimecategory.csv'
+infile_users_hourly = 'prox_users_hourly.csv'
+infile_users_daily = 'prox_users_daily.csv'
+infile_celluse_daily = 'prox_celluse_daily.csv'
+infile_proxcells = 'ref_proxcells.shp'
+infile_hexcells = 'ref_hexcells.shp'
+infile_proxhex = 'ref_cellmapping_proxhex.shp'
+infile_calendar = 'prox_calendar.csv'
+infile_profiles='ref_profiles.csv'
+infile_period = 'ref_period.csv'
+
+##### Read data
+df_calendar = pd.read_csv(indir + infile_calendar,';')
+# ts_users_hourly = pd.read_csv(indir + infile_users_hourly,';')
+# ts_users_daily = pd.read_csv(indir + infile_users_daily,';')
+# ts_celluse_daily = pd.read_csv(indir + infile_celluse_daily,';')
+ts_users_hourly_hex = pd.read_csv(indir + infile_users_hourly.replace('.csv', '_hex_dev.csv'),';',dtype=str)
+ts_users_daily_hex = pd.read_csv(indir + infile_users_daily.replace('.csv', '_hex.csv'),';', dtype=str)
+ts_celluse_daily_hex = pd.read_csv(indir + infile_celluse_daily.replace('.csv', '_hex.csv'),';', dtype=str)
+gdf_proxcells = gpd.read_file(indir + infile_proxcells)
+gdf_hexcells = gpd.read_file(indir + infile_hexcells)
+# gdf_proxhex = gpd.read_file(indir + infile_proxhex)
+df_profiles=pd.read_csv(indir + infile_profiles,';')
+# df_period = pd.read_csv(indir + infile_period,';')   
+
+
+##### Data preparation
+# rename attributes
+gdf_proxcells=gdf_proxcells.rename(columns={'tacs':'cell'})
+gdf_hexcells=gdf_hexcells.rename(columns={'hexid':'cell'})
+df_calendar=df_calendar.rename(columns={'category_nl':'period'})
+
+# prep function
+def prep_proxdata2020(df, df_profiles, df_calendar, freq, types_dict = {'count': float, 'count_extrapolated': float}):
+    # Set attribute types
+    for col, col_type in types_dict.items():
+        df[col] = df[col].astype(col_type)
+    # Join profile names
+    df = df.merge(df_profiles, how='left', left_on='profile', right_on='profile_code')
+    
+    # # Extrapolate counts
+    # marketshares= {'Kotstudent': 0.27, 'default':0.38}
+    # df=extrapolate(prepdata, 'count', 'count_extrapolated', 'profile', marketshares)
+    
+    if freq=='hourly':
+        # format timestamp
+        df['timestamp'] = df['date'] + ' ' + df['time']
+        df['timestamp'] =  pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S')
+        df.drop('period', axis=1)
+    elif freq == 'daily':
+        # format timestamp
+        df['timestamp'] =  pd.to_datetime(df['date'], format='%Y-%m-%d')
+    # Join period names
+    df = df.merge(df_calendar[['date','period']], how='left', left_on='date', right_on='date')
+
+    # set timeseries index
+    df = df.set_index(['timestamp'])
+    return df
+
+# ts_users_hourly = prep_proxdata2020(ts_users_hourly, df_profiles, df_calendar, freq='hourly', types_dict = {'count': float, 'count_extrapolated': float})
+# ts_users_daily = prep_proxdata2020(ts_users_daily, df_profiles, df_calendar, freq='daily', types_dict = {'count': float, 'count_extrapolated': float})
+# ts_celluse_daily = prep_proxdata2020(ts_celluse_daily, df_profiles, df_calendar, freq='daily', types_dict = {'count': float, 'count_extrapolated': float})
+ts_users_hourly_hex = prep_proxdata2020(ts_users_hourly_hex, df_profiles, df_calendar, freq='hourly', types_dict = {'count': float, 'count_extrapolated': float})
+ts_users_daily_hex = prep_proxdata2020(ts_users_daily_hex, df_profiles, df_calendar, freq='daily', types_dict = {'count': float, 'count_extrapolated': float})
+ts_celluse_daily_hex = prep_proxdata2020(ts_celluse_daily_hex, df_profiles, df_calendar, freq='daily', types_dict = {'count': float, 'count_extrapolated': float})
+    
+ts_users_hourly_hex =ts_users_hourly_hex[['cell', 'profile_code', 'profile', 'profile_name', 'profile_order', 'period_y', 'count', 'count_extrapolated']].rename(columns={'period_y':'period'})
+ts_users_hourly_hex['cl']=0
+ts_celluse_daily_hex['cl']=0
+ts_users_daily_hex['cl']=0
+ts_celluse_daily_hex['dayofweek']=ts_celluse_daily_hex.index.dayofweek
+ts_celluse_daily_hex['dagvdweek'] = ts_celluse_daily_hex['dayofweek'].map({0:'Ma', 1:'Di', 2:'Wo', 3:'Do', 4:'Vr', 5:'Za', 6:'Zo'})
+
+
+## Calculate surface area
+gdf_proxcells['area']=gdf_proxcells.geometry.area 
+
+
+# Get datetime indexes
+datetimeindex = ts_users_hourly_hex.index.values
+datetimerange = [datetimeindex.min(),datetimeindex.max()]
+datetimerange = [str(pd.Timestamp(x)) for x in datetimerange]
+dateindex = pd.date_range(start=datetimerange[0], end=datetimerange[1], freq='D')
+weekindex=dateindex[dateindex.dayofweek==0]
+monthindex= pd.date_range(start=datetimerange[0], end=datetimerange[1], freq='MS')
+datetimeindexes= {'datetime': datetimeindex, 
+                  'date': dateindex.strftime("%Y-%m-%d").tolist(),
+                  'week': weekindex.strftime("%Y-%m-%d").tolist(),
+                  'month': monthindex.strftime("%Y-%m-%d").tolist()}
+
+## List of used profiles
+profileoptions =pd.DataFrame(ts_users_hourly_hex['profile_name'].unique(), columns=['profile'])
+profileoptions = profileoptions.merge(df_profiles, 'left', left_on='profile', right_on='profile_name')
+profileoptions = profileoptions.sort_values(['profile_order'])
+#profileoptions = list(profileoptions.profile_name)
+profileoptions = list(map(dict,map(lambda t: zip(('label','value'),t), zip(profileoptions['profile_name'], profileoptions['profile_code']))))
+
+
+
+
+
+
+######!!!====== data =====!!!######
+##### Set data directory parameters
+##### Read data
+##### Data preparation
